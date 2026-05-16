@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Management System - 1NF Schema Controls</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .tab-button.active { background-color: #3b82f6; color: white; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-6">
+            <h1 class="text-3xl font-bold">Library Management System</h1>
+            <p class="text-blue-100 mt-2">1NF Normalized Database Schema Controls</p>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-wrap gap-2 py-4 overflow-x-auto">
+                <button class="tab-button active px-4 py-2 rounded-lg font-medium transition-colors" data-tab="membership-tiers">Membership Tiers</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="users">Users</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="user-phones">User Phones</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="categories">Categories</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="languages">Languages</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="author-roles">Author Roles</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="copy-conditions">Copy Conditions</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="authors">Authors</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="books">Books</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="book-languages">Book Languages</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="book-authors">Book Authors</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="book-copies">Book Copies</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="loans">Loans</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="reservations">Reservations</button>
+                <button class="tab-button px-4 py-2 rounded-lg font-medium transition-colors" data-tab="fines">Fines</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        
+        <!-- Membership Tiers Tab -->
+        <div id="membership-tiers" class="tab-content active">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Membership Tiers</h2>
+                <p class="text-gray-600 mb-6">Manage membership tiers with borrowing limits and fine rates</p>
+                
+                <form id="membership-tiers-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="tier_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Tier Name *</label>
+                        <input type="text" name="tier_name" required maxlength="50" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="e.g., Student, Standard">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Max Books (1-20) *</label>
+                        <input type="number" name="max_books" required min="1" max="20" value="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loan Duration Days (1-90) *</label>
+                        <input type="number" name="loan_duration_days" required min="1" max="90" value="14"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fine Per Day ($) *</label>
+                        <input type="number" name="fine_per_day" required min="0" step="0.01" value="1.00"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Tier
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tier Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Max Books</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Loan Days</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Fine/Day</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="membership-tiers-table" class="divide-y divide-gray-200">
+                            <!-- Data will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="users" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Users</h2>
+                <p class="text-gray-600 mb-6">Manage library users with atomic name and address fields</p>
+                
+                <form id="users-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="user_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">National ID</label>
+                        <input type="text" name="national_id" maxlength="20"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                        <input type="text" name="first_name" required maxlength="75"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                        <input type="text" name="last_name" required maxlength="75"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input type="email" name="email" required maxlength="254"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                        <input type="text" name="street_address" maxlength="200"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        <input type="text" name="city" maxlength="100"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
+                        <input type="text" name="state_province" maxlength="100"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Postal Code</label>
+                        <input type="text" name="postal_code" maxlength="20"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                        <input type="text" name="country" maxlength="100" value="Egypt"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                        <select name="role" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="member" selected>Member</option>
+                            <option value="librarian">Librarian</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Membership Tier *</label>
+                        <select name="tier_id" required id="users-tier-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Active</label>
+                        <select name="is_active"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="1" selected>Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Password Hash *</label>
+                        <input type="text" name="password_hash" required maxlength="255"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-end gap-2 md:col-span-2 lg:col-span-3">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save User
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Email</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">City</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Tier</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Active</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Phones Tab -->
+        <div id="user-phones" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">User Phones</h2>
+                <p class="text-gray-600 mb-6">Manage multiple phone numbers per user (1NF compliant)</p>
+                
+                <form id="user-phones-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="phone_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User *</label>
+                        <select name="user_id" required id="user-phones-user-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number *</label>
+                        <input type="tel" name="phone_number" required maxlength="30"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Phone Type *</label>
+                        <select name="phone_type" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="mobile" selected>Mobile</option>
+                            <option value="home">Home</option>
+                            <option value="work">Work</option>
+                            <option value="fax">Fax</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Is Primary</label>
+                        <select name="is_primary"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="0" selected>No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Phone
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Phone Number</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Primary</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-phones-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Tab -->
+        <div id="categories" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Categories</h2>
+                <p class="text-gray-600 mb-6">Manage book categories with hierarchical support</p>
+                
+                <form id="categories-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="category_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category Name *</label>
+                        <input type="text" name="name" required maxlength="100"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
+                        <select name="parent_id" id="categories-parent-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- None --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Category
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Parent</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="categories-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Languages Tab -->
+        <div id="languages" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Languages</h2>
+                <p class="text-gray-600 mb-6">Manage language lookup table (1NF compliant)</p>
+                
+                <form id="languages-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="language_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Language Name *</label>
+                        <input type="text" name="language_name" required maxlength="80"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ISO Code (3 chars) *</label>
+                        <input type="text" name="iso_code" required maxlength="3" pattern="[a-zA-Z]{3}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="eng, ara, fra">
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Language
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Language Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ISO Code</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="languages-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Author Roles Tab -->
+        <div id="author-roles" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Author Roles</h2>
+                <p class="text-gray-600 mb-6">Manage author role types (1NF compliant - replaces free-text)</p>
+                
+                <form id="author-roles-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="role_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Role Name *</label>
+                        <input type="text" name="role_name" required maxlength="50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Author, Editor, Translator">
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Role
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="author-roles-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Copy Conditions Tab -->
+        <div id="copy-conditions" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Copy Conditions</h2>
+                <p class="text-gray-600 mb-6">Manage book copy condition types (1NF compliant)</p>
+                
+                <form id="copy-conditions-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="condition_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Condition Name *</label>
+                        <input type="text" name="condition_name" required maxlength="30"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="New, Good, Fair">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Condition
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Condition Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Description</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="copy-conditions-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authors Tab -->
+        <div id="authors" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Authors</h2>
+                <p class="text-gray-600 mb-6">Manage authors with atomic name fields (1NF compliant)</p>
+                
+                <form id="authors-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="author_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                        <input type="text" name="first_name" required maxlength="75"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
+                        <input type="text" name="last_name" required maxlength="75"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Birth Year</label>
+                        <input type="number" name="birth_year" min="1000" max="2025"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
+                        <input type="text" name="nationality" maxlength="100"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Bio</label>
+                        <textarea name="bio" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Author
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Name</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Birth Year</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Nationality</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="authors-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Books Tab -->
+        <div id="books" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Books</h2>
+                <p class="text-gray-600 mb-6">Manage books (languages handled in junction table)</p>
+                
+                <form id="books-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="book_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ISBN *</label>
+                        <input type="text" name="isbn" required maxlength="20"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                        <input type="text" name="title" required maxlength="300"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                        <select name="category_id" id="books-category-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Select --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Publisher</label>
+                        <input type="text" name="publisher" maxlength="200"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Published Year</label>
+                        <input type="number" name="published_year" min="1000" max="2025"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Edition</label>
+                        <input type="text" name="edition" maxlength="50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
+                        <input type="url" name="cover_image_url" maxlength="500"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea name="description" rows="3"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Book
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ISBN</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Title</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Category</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Year</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="books-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book Languages Tab -->
+        <div id="book-languages" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Book Languages</h2>
+                <p class="text-gray-600 mb-6">Junction table for books and languages (1NF compliant)</p>
+                
+                <form id="book-languages-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Book *</label>
+                        <select name="book_id" required id="book-languages-book-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Language *</label>
+                        <select name="language_id" required id="book-languages-language-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add Language
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Book</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Language</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="book-languages-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book Authors Tab -->
+        <div id="book-authors" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Book Authors</h2>
+                <p class="text-gray-600 mb-6">Junction table for books, authors, and roles (1NF compliant)</p>
+                
+                <form id="book-authors-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Book *</label>
+                        <select name="book_id" required id="book-authors-book-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Author *</label>
+                        <select name="author_id" required id="book-authors-author-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                        <select name="role_id" required id="book-authors-role-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Add Author
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Book</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Author</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Role</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="book-authors-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book Copies Tab -->
+        <div id="book-copies" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Book Copies</h2>
+                <p class="text-gray-600 mb-6">Manage individual book copies with referenced conditions</p>
+                
+                <form id="book-copies-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="copy_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Book *</label>
+                        <select name="book_id" required id="book-copies-book-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Barcode</label>
+                        <input type="text" name="barcode" maxlength="50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Condition *</label>
+                        <select name="condition_id" required id="book-copies-condition-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Available</label>
+                        <select name="is_available"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="1" selected>Yes</option>
+                            <option value="0">No</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Location Shelf</label>
+                        <input type="text" name="location_shelf" maxlength="50"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Acquired Date</label>
+                        <input type="date" name="acquired_date"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Copy
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Barcode</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Book</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Condition</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Available</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Location</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="book-copies-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loans Tab -->
+        <div id="loans" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Loans</h2>
+                <p class="text-gray-600 mb-6">Manage book loans and returns</p>
+                
+                <form id="loans-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="loan_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User *</label>
+                        <select name="user_id" required id="loans-user-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Book Copy *</label>
+                        <select name="copy_id" required id="loans-copy-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Issued By</label>
+                        <select name="issued_by" id="loans-issued-by-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- Select --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loan Date *</label>
+                        <input type="date" name="loan_date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
+                        <input type="date" name="due_date" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
+                        <input type="date" name="return_date"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                        <select name="status" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="active" selected>Active</option>
+                            <option value="returned">Returned</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Loan
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Copy</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Loan Date</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Due Date</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Return Date</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="loans-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reservations Tab -->
+        <div id="reservations" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Reservations</h2>
+                <p class="text-gray-600 mb-6">Manage book reservations</p>
+                
+                <form id="reservations-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="reservation_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User *</label>
+                        <select name="user_id" required id="reservations-user-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Book *</label>
+                        <select name="book_id" required id="reservations-book-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Expires At *</label>
+                        <input type="datetime-local" name="expires_at" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                        <select name="status" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="pending" selected>Pending</option>
+                            <option value="fulfilled">Fulfilled</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="expired">Expired</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Fulfilled Loan</label>
+                        <select name="fulfilled_loan" id="reservations-loan-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- None --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Reservation
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Book</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Reserved At</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Expires At</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reservations-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fines Tab -->
+        <div id="fines" class="tab-content">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Fines</h2>
+                <p class="text-gray-600 mb-6">Manage fines for overdue loans</p>
+                
+                <form id="fines-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <input type="hidden" name="fine_id">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Loan *</label>
+                        <select name="loan_id" required id="fines-loan-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">User *</label>
+                        <select name="user_id" required id="fines-user-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Overdue Days (>0) *</label>
+                        <input type="number" name="overdue_days" required min="1"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount (>=0) *</label>
+                        <input type="number" name="amount" required min="0" step="0.01"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                        <select name="status" required
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="unpaid" selected>Unpaid</option>
+                            <option value="paid">Paid</option>
+                            <option value="waived">Waived</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Collected By</label>
+                        <select name="collected_by" id="fines-collected-by-select"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- None --</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Paid At</label>
+                        <input type="datetime-local" name="paid_at"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="md:col-span-2 lg:col-span-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                        <textarea name="notes" rows="2"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end gap-2">
+                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Save Fine
+                        </button>
+                        <button type="reset" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                            Reset
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Loan</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Overdue Days</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Amount</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fines-table" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-12 py-6">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 Library Management System - 1NF Normalized Schema</p>
+        </div>
+    </footer>
+
+    <script>
+        // ============================================
+        // DATA STORE (Simulating database)
+        // ============================================
+        const db = {
+            membershipTiers: [
+                { tier_id: 1, tier_name: 'Student', max_books: 3, loan_duration_days: 14, fine_per_day: 0.50 },
+                { tier_id: 2, tier_name: 'Standard', max_books: 5, loan_duration_days: 21, fine_per_day: 1.00 },
+                { tier_id: 3, tier_name: 'Premium', max_books: 10, loan_duration_days: 30, fine_per_day: 0.50 },
+                { tier_id: 4, tier_name: 'Staff', max_books: 15, loan_duration_days: 60, fine_per_day: 0.00 }
+            ],
+            users: [],
+            userPhones: [],
+            categories: [
+                { category_id: 1, name: 'Fiction', parent_id: null, description: 'Narrative literature' },
+                { category_id: 2, name: 'Non-Fiction', parent_id: null, description: 'Factual and informational works' },
+                { category_id: 3, name: 'Science', parent_id: null, description: 'Natural and applied sciences' },
+                { category_id: 4, name: 'History', parent_id: null, description: 'Historical accounts and analysis' },
+                { category_id: 5, name: 'Technology', parent_id: null, description: 'Computing, engineering, and technology' },
+                { category_id: 6, name: 'Children', parent_id: null, description: 'Books for young readers' },
+                { category_id: 7, name: 'Reference', parent_id: null, description: 'Encyclopedias, dictionaries, almanacs' }
+            ],
+            languages: [
+                { language_id: 1, language_name: 'English', iso_code: 'eng' },
+                { language_id: 2, language_name: 'Arabic', iso_code: 'ara' },
+                { language_id: 3, language_name: 'French', iso_code: 'fra' },
+                { language_id: 4, language_name: 'German', iso_code: 'deu' },
+                { language_id: 5, language_name: 'Spanish', iso_code: 'spa' }
+            ],
+            authorRoles: [
+                { role_id: 1, role_name: 'Author' },
+                { role_id: 2, role_name: 'Co-Author' },
+                { role_id: 3, role_name: 'Editor' },
+                { role_id: 4, role_name: 'Translator' },
+                { role_id: 5, role_name: 'Illustrator' },
+                { role_id: 6, role_name: 'Foreword' }
+            ],
+            copyConditions: [
+                { condition_id: 1, condition_name: 'New', description: 'Unused, no marks or wear' },
+                { condition_id: 2, condition_name: 'Good', description: 'Minor wear, fully readable' },
+                { condition_id: 3, condition_name: 'Fair', description: 'Noticeable wear, still usable' },
+                { condition_id: 4, condition_name: 'Poor', description: 'Heavy wear, readable with difficulty' },
+                { condition_id: 5, condition_name: 'Damaged', description: 'Physical damage, may affect use' },
+                { condition_id: 6, condition_name: 'Lost', description: 'Copy reported missing' }
+            ],
+            authors: [],
+            books: [],
+            bookLanguages: [],
+            bookAuthors: [],
+            bookCopies: [],
+            loans: [],
+            reservations: [],
+            fines: []
+        };
+
+        // Auto-increment IDs
+        let ids = {
+            user_id: 1,
+            phone_id: 1,
+            category_id: 8,
+            language_id: 6,
+            role_id: 7,
+            condition_id: 7,
+            author_id: 1,
+            book_id: 1,
+            copy_id: 1,
+            loan_id: 1,
+            reservation_id: 1,
+            fine_id: 1
+        };
+
+        // ============================================
+        // TAB NAVIGATION
+        // ============================================
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
+
+        // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
+        function getNextId(key) {
+            return ids[key]++;
+        }
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString();
+        }
+
+        // ============================================
+        // RENDER FUNCTIONS
+        // ============================================
+        function renderMembershipTiers() {
+            const tbody = document.getElementById('membership-tiers-table');
+            tbody.innerHTML = db.membershipTiers.map(tier => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${tier.tier_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(tier.tier_name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${tier.max_books}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${tier.loan_duration_days}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">$${tier.fine_per_day.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editMembershipTier(${tier.tier_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteMembershipTier(${tier.tier_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update tier selects
+            const select = document.getElementById('users-tier-select');
+            select.innerHTML = db.membershipTiers.map(t => 
+                `<option value="${t.tier_id}">${escapeHtml(t.tier_name)}</option>`
+            ).join('');
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('users-table');
+            tbody.innerHTML = db.users.map(user => {
+                const tier = db.membershipTiers.find(t => t.tier_id === user.tier_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${user.user_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(user.first_name)} ${escapeHtml(user.last_name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(user.email)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(user.city || '')}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(user.role)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${tier ? escapeHtml(tier.tier_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${user.is_active ? 'Yes' : 'No'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editUser(${user.user_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteUser(${user.user_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            updateUserSelects();
+        }
+
+        function updateUserSelects() {
+            const selects = ['user-phones-user-select', 'loans-user-select', 'reservations-user-select', 'fines-user-select', 'loans-issued-by-select', 'fines-collected-by-select'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    const isLibrarianOnly = id.includes('issued-by') || id.includes('collected-by');
+                    select.innerHTML = '<option value="">-- Select --</option>' + db.users
+                        .filter(u => !isLibrarianOnly || u.role !== 'member')
+                        .map(u => `<option value="${u.user_id}">${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</option>`)
+                        .join('');
+                }
+            });
+        }
+
+        function renderUserPhones() {
+            const tbody = document.getElementById('user-phones-table');
+            tbody.innerHTML = db.userPhones.map(phone => {
+                const user = db.users.find(u => u.user_id === phone.user_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${phone.phone_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${user ? escapeHtml(user.first_name + ' ' + user.last_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(phone.phone_number)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(phone.phone_type)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${phone.is_primary ? 'Yes' : 'No'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editUserPhone(${phone.phone_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteUserPhone(${phone.phone_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function renderCategories() {
+            const tbody = document.getElementById('categories-table');
+            tbody.innerHTML = db.categories.map(cat => {
+                const parent = db.categories.find(c => c.category_id === cat.parent_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${cat.category_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(cat.name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${parent ? escapeHtml(parent.name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(cat.description || '')}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editCategory(${cat.category_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteCategory(${cat.category_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            // Update parent select
+            const select = document.getElementById('categories-parent-select');
+            select.innerHTML = '<option value="">-- None --</option>' + db.categories
+                .map(c => `<option value="${c.category_id}">${escapeHtml(c.name)}</option>`).join('');
+            
+            // Update book category select
+            const bookSelect = document.getElementById('books-category-select');
+            bookSelect.innerHTML = '<option value="">-- Select --</option>' + db.categories
+                .map(c => `<option value="${c.category_id}">${escapeHtml(c.name)}</option>`).join('');
+        }
+
+        function renderLanguages() {
+            const tbody = document.getElementById('languages-table');
+            tbody.innerHTML = db.languages.map(lang => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${lang.language_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(lang.language_name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(lang.iso_code)}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editLanguage(${lang.language_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteLanguage(${lang.language_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateLanguageSelects();
+        }
+
+        function updateLanguageSelects() {
+            const select = document.getElementById('book-languages-language-select');
+            select.innerHTML = db.languages.map(l => 
+                `<option value="${l.language_id}">${escapeHtml(l.language_name)} (${l.iso_code})</option>`
+            ).join('');
+        }
+
+        function renderAuthorRoles() {
+            const tbody = document.getElementById('author-roles-table');
+            tbody.innerHTML = db.authorRoles.map(role => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${role.role_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(role.role_name)}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editAuthorRole(${role.role_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteAuthorRole(${role.role_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateRoleSelects();
+        }
+
+        function updateRoleSelects() {
+            const select = document.getElementById('book-authors-role-select');
+            select.innerHTML = db.authorRoles.map(r => 
+                `<option value="${r.role_id}">${escapeHtml(r.role_name)}</option>`
+            ).join('');
+        }
+
+        function renderCopyConditions() {
+            const tbody = document.getElementById('copy-conditions-table');
+            tbody.innerHTML = db.copyConditions.map(cond => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${cond.condition_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(cond.condition_name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(cond.description || '')}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editCopyCondition(${cond.condition_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteCopyCondition(${cond.condition_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateConditionSelects();
+        }
+
+        function updateConditionSelects() {
+            const select = document.getElementById('book-copies-condition-select');
+            select.innerHTML = db.copyConditions.map(c => 
+                `<option value="${c.condition_id}">${escapeHtml(c.condition_name)}</option>`
+            ).join('');
+        }
+
+        function renderAuthors() {
+            const tbody = document.getElementById('authors-table');
+            tbody.innerHTML = db.authors.map(author => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${author.author_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(author.first_name)} ${escapeHtml(author.last_name)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${author.birth_year || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(author.nationality || '')}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editAuthor(${author.author_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteAuthor(${author.author_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            updateAuthorSelects();
+        }
+
+        function updateAuthorSelects() {
+            const select = document.getElementById('book-authors-author-select');
+            select.innerHTML = db.authors.map(a => 
+                `<option value="${a.author_id}">${escapeHtml(a.first_name)} ${escapeHtml(a.last_name)}</option>`
+            ).join('');
+        }
+
+        function renderBooks() {
+            const tbody = document.getElementById('books-table');
+            tbody.innerHTML = db.books.map(book => {
+                const cat = db.categories.find(c => c.category_id === book.category_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${book.book_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(book.isbn)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(book.title)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${cat ? escapeHtml(cat.name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${book.published_year || '-'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editBook(${book.book_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteBook(${book.book_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            updateBookSelects();
+        }
+
+        function updateBookSelects() {
+            const selects = ['book-languages-book-select', 'book-authors-book-select', 'book-copies-book-select', 'reservations-book-select'];
+            selects.forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = db.books.map(b => 
+                    `<option value="${b.book_id}">${escapeHtml(b.title)}</option>`
+                ).join('');
+            });
+        }
+
+        function renderBookLanguages() {
+            const tbody = document.getElementById('book-languages-table');
+            tbody.innerHTML = db.bookLanguages.map(bl => {
+                const book = db.books.find(b => b.book_id === bl.book_id);
+                const lang = db.languages.find(l => l.language_id === bl.language_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${book ? escapeHtml(book.title) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${lang ? escapeHtml(lang.language_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="deleteBookLanguage(${bl.book_id}, ${bl.language_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function renderBookAuthors() {
+            const tbody = document.getElementById('book-authors-table');
+            tbody.innerHTML = db.bookAuthors.map(ba => {
+                const book = db.books.find(b => b.book_id === ba.book_id);
+                const author = db.authors.find(a => a.author_id === ba.author_id);
+                const role = db.authorRoles.find(r => r.role_id === ba.role_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${book ? escapeHtml(book.title) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${author ? escapeHtml(author.first_name + ' ' + author.last_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${role ? escapeHtml(role.role_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="deleteBookAuthor(${ba.book_id}, ${ba.author_id}, ${ba.role_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function renderBookCopies() {
+            const tbody = document.getElementById('book-copies-table');
+            tbody.innerHTML = db.bookCopies.map(copy => {
+                const book = db.books.find(b => b.book_id === copy.book_id);
+                const cond = db.copyConditions.find(c => c.condition_id === copy.condition_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${copy.copy_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(copy.barcode || '')}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${book ? escapeHtml(book.title) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${cond ? escapeHtml(cond.condition_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${copy.is_available ? 'Yes' : 'No'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${escapeHtml(copy.location_shelf || '')}</td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editBookCopy(${copy.copy_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteBookCopy(${copy.copy_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            updateCopySelects();
+        }
+
+        function updateCopySelects() {
+            const select = document.getElementById('loans-copy-select');
+            select.innerHTML = db.bookCopies.map(c => {
+                const book = db.books.find(b => b.book_id === c.book_id);
+                return `<option value="${c.copy_id}">${book ? escapeHtml(book.title) : 'Unknown'} (${c.barcode || 'no barcode'})</option>`;
+            }).join('');
+        }
+
+        function renderLoans() {
+            const tbody = document.getElementById('loans-table');
+            tbody.innerHTML = db.loans.map(loan => {
+                const user = db.users.find(u => u.user_id === loan.user_id);
+                const copy = db.bookCopies.find(c => c.copy_id === loan.copy_id);
+                const book = copy ? db.books.find(b => b.book_id === copy.book_id) : null;
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${loan.loan_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${user ? escapeHtml(user.first_name + ' ' + user.last_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${book ? escapeHtml(book.title) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(loan.loan_date)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(loan.due_date)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(loan.return_date)}</td>
+                    <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded text-xs ${loan.status === 'active' ? 'bg-green-100 text-green-800' : loan.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${escapeHtml(loan.status)}</span></td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editLoan(${loan.loan_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteLoan(${loan.loan_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+            
+            updateLoanSelects();
+        }
+
+        function updateLoanSelects() {
+            const loanSelect = document.getElementById('fines-loan-select');
+            loanSelect.innerHTML = '<option value="">-- Select --</option>' + db.loans
+                .map(l => `<option value="${l.loan_id}">Loan #${l.loan_id}</option>`).join('');
+            
+            const resLoanSelect = document.getElementById('reservations-loan-select');
+            resLoanSelect.innerHTML = '<option value="">-- None --</option>' + db.loans
+                .map(l => `<option value="${l.loan_id}">Loan #${l.loan_id}</option>`).join('');
+        }
+
+        function renderReservations() {
+            const tbody = document.getElementById('reservations-table');
+            tbody.innerHTML = db.reservations.map(res => {
+                const user = db.users.find(u => u.user_id === res.user_id);
+                const book = db.books.find(b => b.book_id === res.book_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${res.reservation_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${user ? escapeHtml(user.first_name + ' ' + user.last_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${book ? escapeHtml(book.title) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(res.reserved_at)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${formatDate(res.expires_at)}</td>
+                    <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded text-xs ${res.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : res.status === 'fulfilled' ? 'bg-green-100 text-green-800' : res.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${escapeHtml(res.status)}</span></td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editReservation(${res.reservation_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteReservation(${res.reservation_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        function renderFines() {
+            const tbody = document.getElementById('fines-table');
+            tbody.innerHTML = db.fines.map(fine => {
+                const user = db.users.find(u => u.user_id === fine.user_id);
+                return `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm text-gray-700">${fine.fine_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">Loan #${fine.loan_id}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${user ? escapeHtml(user.first_name + ' ' + user.last_name) : '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">${fine.overdue_days}</td>
+                    <td class="px-4 py-3 text-sm text-gray-700">$${fine.amount.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-sm"><span class="px-2 py-1 rounded text-xs ${fine.status === 'paid' ? 'bg-green-100 text-green-800' : fine.status === 'waived' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}">${escapeHtml(fine.status)}</span></td>
+                    <td class="px-4 py-3 text-sm">
+                        <button onclick="editFine(${fine.fine_id})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                        <button onclick="deleteFine(${fine.fine_id})" class="text-red-600 hover:text-red-800">Delete</button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+
+        // ============================================
+        // FORM HANDLERS
+        // ============================================
+        function setupFormHandler(formId, storeKey, idField, renderFn) {
+            const form = document.getElementById(formId);
+            if (!form) return;
+            
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const data = {};
+                
+                for (let [key, value] of formData.entries()) {
+                    if (value === '') continue;
+                    data[key] = isNaN(value) ? value : (value.includes('.') ? parseFloat(value) : parseInt(value));
+                }
+                
+                const existingId = data[idField];
+                if (existingId) {
+                    const index = db[storeKey].findIndex(item => item[idField] == existingId);
+                    if (index !== -1) {
+                        delete data[idField];
+                        db[storeKey][index] = { ...db[storeKey][index], ...data };
+                    }
+                } else {
+                    data[idField] = getNextId(idField);
+                    db[storeKey].push(data);
+                }
+                
+                form.reset();
+                renderFn();
+            });
+        }
+
+        // Setup all form handlers
+        setupFormHandler('membership-tiers-form', 'membershipTiers', 'tier_id', renderMembershipTiers);
+        setupFormHandler('users-form', 'users', 'user_id', renderUsers);
+        setupFormHandler('user-phones-form', 'userPhones', 'phone_id', renderUserPhones);
+        setupFormHandler('categories-form', 'categories', 'category_id', renderCategories);
+        setupFormHandler('languages-form', 'languages', 'language_id', renderLanguages);
+        setupFormHandler('author-roles-form', 'authorRoles', 'role_id', renderAuthorRoles);
+        setupFormHandler('copy-conditions-form', 'copyConditions', 'condition_id', renderCopyConditions);
+        setupFormHandler('authors-form', 'authors', 'author_id', renderAuthors);
+        setupFormHandler('books-form', 'books', 'book_id', renderBooks);
+        setupFormHandler('book-copies-form', 'bookCopies', 'copy_id', renderBookCopies);
+        setupFormHandler('loans-form', 'loans', 'loan_id', renderLoans);
+        setupFormHandler('reservations-form', 'reservations', 'reservation_id', renderReservations);
+        setupFormHandler('fines-form', 'fines', 'fine_id', renderFines);
+
+        // Junction table handlers
+        document.getElementById('book-languages-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const book_id = parseInt(formData.get('book_id'));
+            const language_id = parseInt(formData.get('language_id'));
+            
+            if (!db.bookLanguages.find(bl => bl.book_id === book_id && bl.language_id === language_id)) {
+                db.bookLanguages.push({ book_id, language_id });
+                renderBookLanguages();
+            }
+            e.target.reset();
+        });
+
+        document.getElementById('book-authors-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const book_id = parseInt(formData.get('book_id'));
+            const author_id = parseInt(formData.get('author_id'));
+            const role_id = parseInt(formData.get('role_id'));
+            
+            if (!db.bookAuthors.find(ba => ba.book_id === book_id && ba.author_id === author_id && ba.role_id === role_id)) {
+                db.bookAuthors.push({ book_id, author_id, role_id });
+                renderBookAuthors();
+            }
+            e.target.reset();
+        });
+
+        // ============================================
+        // EDIT/DELETE FUNCTIONS
+        // ============================================
+        function fillForm(formId, data) {
+            const form = document.getElementById(formId);
+            for (let key in data) {
+                if (form.elements[key]) {
+                    form.elements[key].value = data[key];
+                }
+            }
+        }
+
+        // Membership Tiers
+        window.editMembershipTier = (id) => {
+            const tier = db.membershipTiers.find(t => t.tier_id === id);
+            fillForm('membership-tiers-form', tier);
+        };
+        window.deleteMembershipTier = (id) => {
+            if (confirm('Delete this tier?')) {
+                db.membershipTiers = db.membershipTiers.filter(t => t.tier_id !== id);
+                renderMembershipTiers();
+            }
+        };
+
+        // Users
+        window.editUser = (id) => {
+            const user = db.users.find(u => u.user_id === id);
+            fillForm('users-form', user);
+        };
+        window.deleteUser = (id) => {
+            if (confirm('Delete this user?')) {
+                db.users = db.users.filter(u => u.user_id !== id);
+                renderUsers();
+            }
+        };
+
+        // User Phones
+        window.editUserPhone = (id) => {
+            const phone = db.userPhones.find(p => p.phone_id === id);
+            fillForm('user-phones-form', phone);
+        };
+        window.deleteUserPhone = (id) => {
+            if (confirm('Delete this phone?')) {
+                db.userPhones = db.userPhones.filter(p => p.phone_id !== id);
+                renderUserPhones();
+            }
+        };
+
+        // Categories
+        window.editCategory = (id) => {
+            const cat = db.categories.find(c => c.category_id === id);
+            fillForm('categories-form', cat);
+        };
+        window.deleteCategory = (id) => {
+            if (confirm('Delete this category?')) {
+                db.categories = db.categories.filter(c => c.category_id !== id);
+                renderCategories();
+            }
+        };
+
+        // Languages
+        window.editLanguage = (id) => {
+            const lang = db.languages.find(l => l.language_id === id);
+            fillForm('languages-form', lang);
+        };
+        window.deleteLanguage = (id) => {
+            if (confirm('Delete this language?')) {
+                db.languages = db.languages.filter(l => l.language_id !== id);
+                renderLanguages();
+            }
+        };
+
+        // Author Roles
+        window.editAuthorRole = (id) => {
+            const role = db.authorRoles.find(r => r.role_id === id);
+            fillForm('author-roles-form', role);
+        };
+        window.deleteAuthorRole = (id) => {
+            if (confirm('Delete this role?')) {
+                db.authorRoles = db.authorRoles.filter(r => r.role_id !== id);
+                renderAuthorRoles();
+            }
+        };
+
+        // Copy Conditions
+        window.editCopyCondition = (id) => {
+            const cond = db.copyConditions.find(c => c.condition_id === id);
+            fillForm('copy-conditions-form', cond);
+        };
+        window.deleteCopyCondition = (id) => {
+            if (confirm('Delete this condition?')) {
+                db.copyConditions = db.copyConditions.filter(c => c.condition_id !== id);
+                renderCopyConditions();
+            }
+        };
+
+        // Authors
+        window.editAuthor = (id) => {
+            const author = db.authors.find(a => a.author_id === id);
+            fillForm('authors-form', author);
+        };
+        window.deleteAuthor = (id) => {
+            if (confirm('Delete this author?')) {
+                db.authors = db.authors.filter(a => a.author_id !== id);
+                renderAuthors();
+            }
+        };
+
+        // Books
+        window.editBook = (id) => {
+            const book = db.books.find(b => b.book_id === id);
+            fillForm('books-form', book);
+        };
+        window.deleteBook = (id) => {
+            if (confirm('Delete this book?')) {
+                db.books = db.books.filter(b => b.book_id !== id);
+                renderBooks();
+            }
+        };
+
+        // Book Languages
+        window.deleteBookLanguage = (book_id, language_id) => {
+            if (confirm('Remove this language from the book?')) {
+                db.bookLanguages = db.bookLanguages.filter(bl => !(bl.book_id === book_id && bl.language_id === language_id));
+                renderBookLanguages();
+            }
+        };
+
+        // Book Authors
+        window.deleteBookAuthor = (book_id, author_id, role_id) => {
+            if (confirm('Remove this author from the book?')) {
+                db.bookAuthors = db.bookAuthors.filter(ba => !(ba.book_id === book_id && ba.author_id === author_id && ba.role_id === role_id));
+                renderBookAuthors();
+            }
+        };
+
+        // Book Copies
+        window.editBookCopy = (id) => {
+            const copy = db.bookCopies.find(c => c.copy_id === id);
+            fillForm('book-copies-form', copy);
+        };
+        window.deleteBookCopy = (id) => {
+            if (confirm('Delete this copy?')) {
+                db.bookCopies = db.bookCopies.filter(c => c.copy_id !== id);
+                renderBookCopies();
+            }
+        };
+
+        // Loans
+        window.editLoan = (id) => {
+            const loan = db.loans.find(l => l.loan_id === id);
+            fillForm('loans-form', { ...loan, loan_date: loan.loan_date?.split('T')[0], due_date: loan.due_date?.split('T')[0], return_date: loan.return_date?.split('T')[0] });
+        };
+        window.deleteLoan = (id) => {
+            if (confirm('Delete this loan?')) {
+                db.loans = db.loans.filter(l => l.loan_id !== id);
+                renderLoans();
+            }
+        };
+
+        // Reservations
+        window.editReservation = (id) => {
+            const res = db.reservations.find(r => r.reservation_id === id);
+            fillForm('reservations-form', res);
+        };
+        window.deleteReservation = (id) => {
+            if (confirm('Delete this reservation?')) {
+                db.reservations = db.reservations.filter(r => r.reservation_id !== id);
+                renderReservations();
+            }
+        };
+
+        // Fines
+        window.editFine = (id) => {
+            const fine = db.fines.find(f => f.fine_id === id);
+            fillForm('fines-form', fine);
+        };
+        window.deleteFine = (id) => {
+            if (confirm('Delete this fine?')) {
+                db.fines = db.fines.filter(f => f.fine_id !== id);
+                renderFines();
+            }
+        };
+
+        // ============================================
+        // INITIALIZE
+        // ============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMembershipTiers();
+            renderUsers();
+            renderUserPhones();
+            renderCategories();
+            renderLanguages();
+            renderAuthorRoles();
+            renderCopyConditions();
+            renderAuthors();
+            renderBooks();
+            renderBookLanguages();
+            renderBookAuthors();
+            renderBookCopies();
+            renderLoans();
+            renderReservations();
+            renderFines();
+        });
+    </script>
+</body>
+</html>
