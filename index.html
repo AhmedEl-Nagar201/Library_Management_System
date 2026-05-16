@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <!-- Login Screen -->
@@ -148,14 +150,21 @@
 
         async function loadLookupData() {
             try {
-                const [tiers, categories, languages, roles, conditions] = await Promise.all([
+                const [tiers, categories, languages, roles, conditions, users, books, authors, bookCopies] = await Promise.all([
                     fetch(`${API_BASE}/membership-tiers`).then(r => r.json()),
                     fetch(`${API_BASE}/categories`).then(r => r.json()),
                     fetch(`${API_BASE}/languages`).then(r => r.json()),
                     fetch(`${API_BASE}/author-roles`).then(r => r.json()),
-                    fetch(`${API_BASE}/copy-conditions`).then(r => r.json())
+                    fetch(`${API_BASE}/copy-conditions`).then(r => r.json()),
+                    fetch(`${API_BASE}/users`).then(r => r.json()),
+                    fetch(`${API_BASE}/books`).then(r => r.json()),
+                    fetch(`${API_BASE}/authors`).then(r => r.json()),
+                    fetch(`${API_BASE}/book-copies`).then(r => r.json())
                 ]);
-                lookupData = { tiers, categories, languages, roles, conditions };
+                lookupData = { 
+                    tiers, categories, languages, roles, conditions, 
+                    users, books, authors, 'book-copies': bookCopies 
+                };
             } catch (err) {
                 console.error('Failed to load lookup data:', err);
             }
@@ -228,7 +237,7 @@
             
             try {
                 if (currentTab === 'dashboard') {
-                    renderDashboard(contentArea);
+                    await renderDashboard(contentArea);
                     return;
                 }
                 
@@ -243,20 +252,64 @@
             }
         }
 
-        function renderDashboard(container) {
-            container.innerHTML = `
-                <h2 class="text-2xl font-bold mb-6">Welcome, ${currentUser.first_name}!</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-blue-50 p-4 rounded-lg">
-                        <h3 class="text-sm font-medium text-blue-800">Your Role</h3>
-                        <p class="text-2xl font-bold text-blue-600 capitalize">${currentUser.role}</p>
+        async function renderDashboard(container) {
+            try {
+                const usersCount = (lookupData.users || []).length;
+                const adminsCount = (lookupData.users || []).filter(u => u.role === 'admin').length;
+                const librariansCount = (lookupData.users || []).filter(u => u.role === 'librarian').length;
+                const membersCount = (lookupData.users || []).filter(u => u.role === 'member').length;
+                const booksCount = (lookupData.books || []).length;
+                
+                let loansStatsHtml = '';
+                try {
+                    const loansRes = await fetch(`${API_BASE}/loans`);
+                    if(loansRes.ok) {
+                        const loans = await loansRes.json();
+                        const activeLoans = loans.filter(l => l.status === 'active').length;
+                        const overdueLoans = loans.filter(l => l.status === 'overdue').length;
+                        loansStatsHtml = `
+                            <div class="bg-yellow-50 p-4 rounded-lg shadow-sm border border-yellow-100">
+                                <h3 class="text-sm font-medium text-yellow-800">Active Loans</h3>
+                                <p class="text-2xl font-bold text-yellow-600">${activeLoans}</p>
+                            </div>
+                            <div class="bg-red-50 p-4 rounded-lg shadow-sm border border-red-100">
+                                <h3 class="text-sm font-medium text-red-800">Overdue Loans</h3>
+                                <p class="text-2xl font-bold text-red-600">${overdueLoans}</p>
+                            </div>
+                        `;
+                    }
+                } catch(e) {}
+
+                container.innerHTML = `
+                    <h2 class="text-2xl font-bold mb-6 text-gray-800">Welcome, ${currentUser.first_name}!</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-100">
+                            <h3 class="text-sm font-medium text-blue-800">Your Role</h3>
+                            <p class="text-2xl font-bold text-blue-600 capitalize">${currentUser.role}</p>
+                        </div>
+                        <div class="bg-indigo-50 p-4 rounded-lg shadow-sm border border-indigo-100">
+                            <h3 class="text-sm font-medium text-indigo-800">Total Users</h3>
+                            <p class="text-2xl font-bold text-indigo-600">${usersCount}</p>
+                            <div class="text-xs text-indigo-500 mt-1">
+                                ${adminsCount} Admins · ${librariansCount} Libs · ${membersCount} Members
+                            </div>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg shadow-sm border border-green-100">
+                            <h3 class="text-sm font-medium text-green-800">Total Books</h3>
+                            <p class="text-2xl font-bold text-green-600">${booksCount}</p>
+                        </div>
+                        ${loansStatsHtml}
                     </div>
-                </div>
-                <div class="mt-6">
-                    <h3 class="text-lg font-bold mb-2">Available Tables</h3>
-                    <p class="text-gray-600">Use the tabs above to navigate through different sections of the library management system.</p>
-                </div>
-            `;
+                    
+                    <div class="mt-6 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                        <h3 class="text-lg font-bold mb-2 text-gray-800">Quick Navigation</h3>
+                        <p class="text-gray-600">Use the tabs above to navigate through different sections. Use the search bar in any table to quickly find what you are looking for.</p>
+                    </div>
+                `;
+            } catch (err) {
+                container.innerHTML = `<div class="text-red-500">Error loading dashboard stats</div>`;
+            }
         }
 
         function renderTable(container, data) {
@@ -275,12 +328,15 @@
             const idField = columns.find(c => c.endsWith('_id')) || columns[0];
             
             let html = `
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 space-y-2 md:space-y-0">
                     <h2 class="text-2xl font-bold">${formatTableName(currentTab)}</h2>
-                    ${canEdit() ? `<button onclick="showForm()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Add New</button>` : ''}
+                    <div class="flex space-x-2 w-full md:w-auto">
+                        <input type="text" id="table-search" placeholder="Search..." class="w-full md:w-64 border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" onkeyup="filterTable(this.value)">
+                        ${canEdit() ? `<button onclick="showForm()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded whitespace-nowrap">Add New</button>` : ''}
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white">
+                    <table id="data-table" class="min-w-full bg-white">
                         <thead>
                             <tr class="bg-gray-100">
                                 ${columns.map(col => `<th class="py-2 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${col}</th>`).join('')}
@@ -292,9 +348,9 @@
                                 <tr class="border-b hover:bg-gray-50">
                                     ${columns.map(col => `<td class="py-2 px-4 text-sm text-gray-900">${formatValue(row[col])}</td>`).join('')}
                                     ${canEdit() ? `
-                                        <td class="py-2 px-4 text-sm">
-                                            <button onclick="editItem(${row[idField]})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
-                                            <button onclick="deleteItem(${row[idField]})" class="text-red-600 hover:text-red-800">Delete</button>
+                                        <td class="py-2 px-4 text-sm whitespace-nowrap">
+                                            ${!['book-languages', 'book-authors'].includes(currentTab) ? `<button onclick="editItem('${row[idField]}')" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>` : ''}
+                                            <button onclick="deleteItem('${row[idField]}')" class="text-red-600 hover:text-red-800">Delete</button>
                                         </td>
                                     ` : ''}
                                 </tr>
@@ -312,7 +368,19 @@
         function formatValue(val) {
             if (val === null || val === undefined) return '';
             if (typeof val === 'boolean') return val ? 'Yes' : 'No';
+            if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+                return new Date(val).toLocaleDateString();
+            }
             return String(val);
+        }
+
+        function filterTable(query) {
+            query = query.toLowerCase();
+            const rows = document.querySelectorAll('#data-table tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
         }
 
         function formatTableName(name) {
@@ -365,15 +433,24 @@
                 html += `<label class="block text-sm font-medium text-gray-700 mb-1">${field.label}</label>`;
                 
                 if (field.type === 'select') {
-                    const options = lookupData[field.options] || [];
                     html += `<select name="${field.name}" class="w-full border rounded-md p-2" ${required}>`;
                     html += `<option value="">Select ${field.label}</option>`;
-                    options.forEach(opt => {
-                        const optVal = opt[field.valueField || 'name'] || opt[Object.keys(opt)[0]];
-                        const optLabel = opt[field.labelField || 'name'] || opt[Object.keys(opt)[1] || Object.keys(opt)[0]];
-                        const selected = value == optVal ? 'selected' : '';
-                        html += `<option value="${optVal}" ${selected}>${optLabel}</option>`;
-                    });
+                    
+                    if (field.options && field.options.startsWith('enum:')) {
+                        const enumValues = field.options.substring(5).split(',');
+                        enumValues.forEach(optVal => {
+                            const selected = value == optVal ? 'selected' : '';
+                            html += `<option value="${optVal}" ${selected}>${optVal.charAt(0).toUpperCase() + optVal.slice(1)}</option>`;
+                        });
+                    } else {
+                        const options = lookupData[field.options] || [];
+                        options.forEach(opt => {
+                            const optVal = opt[field.valueField || 'name'] || opt[Object.keys(opt)[0]];
+                            const optLabel = opt[field.labelField || 'name'] || opt[Object.keys(opt)[1] || Object.keys(opt)[0]];
+                            const selected = value == optVal ? 'selected' : '';
+                            html += `<option value="${optVal}" ${selected}>${optLabel}</option>`;
+                        });
+                    }
                     html += `</select>`;
                 } else if (field.type === 'textarea') {
                     html += `<textarea name="${field.name}" rows="3" class="w-full border rounded-md p-2" ${required}>${value || ''}</textarea>`;
@@ -393,6 +470,16 @@
             `;
             
             showModal(html);
+            
+            // Initialize TomSelect on all select elements in the modal
+            setTimeout(() => {
+                document.querySelectorAll('#modal select').forEach(el => {
+                    new TomSelect(el, {
+                        create: false,
+                        controlInput: null // Allows searching via the standard input
+                    });
+                });
+            }, 10);
         }
 
         function getFormSchema(tableName) {
@@ -561,6 +648,14 @@
             });
             
             const schema = getFormSchema(currentTab);
+            
+            // Handle unchecked checkboxes
+            schema.fields.forEach(field => {
+                if (field.type === 'checkbox' && !data.hasOwnProperty(field.name)) {
+                    data[field.name] = 0;
+                }
+            });
+            
             const endpoint = schema.endpoint;
             const method = editingId ? 'PUT' : 'POST';
             const url = editingId ? `${API_BASE}/${endpoint}/${editingId}` : `${API_BASE}/${endpoint}`;
@@ -574,6 +669,7 @@
                 
                 if (response.ok) {
                     hideModal();
+                    await loadLookupData(); // Refresh dropdown options
                     renderContent();
                 } else {
                     const error = await response.json();
@@ -613,6 +709,7 @@
             try {
                 const response = await fetch(url, { method: 'DELETE' });
                 if (response.ok) {
+                    await loadLookupData(); // Refresh dropdown options
                     renderContent();
                 } else {
                     const error = await response.json();
