@@ -1,5 +1,5 @@
 -- ============================================================
---  LIBRARY MANAGEMENT SYSTEM  —  1NF NORMALIZED
+--  LIBRARY MANAGEMENT SYSTEM — 1NF NORMALIZED (MySQL Version)
 --  Changes from original schema are marked with [1NF FIX]
 -- ============================================================
 --
@@ -13,60 +13,57 @@
 --  ⑦ book_copies.condition  → references new copy_conditions lookup table (repeating group of allowed values)
 -- ============================================================
 
+-- ============================================================
+--  CREATE AND SELECT DATABASE
+-- ============================================================
+CREATE DATABASE IF NOT EXISTS library_management_system;
+USE library_management_system;
+
+-- ============================================================
+--  LIBRARY MANAGEMENT SYSTEM — 1NF NORMALIZED (MySQL Version)
+-- ... rest of the script continues below
+
 
 -- ============================================================
 --  CLEANUP
 -- ============================================================
-DROP TABLE IF EXISTS fines               CASCADE;
-DROP TABLE IF EXISTS reservations        CASCADE;
-DROP TABLE IF EXISTS loans               CASCADE;
-DROP TABLE IF EXISTS book_copies         CASCADE;
-DROP TABLE IF EXISTS book_languages      CASCADE;
-DROP TABLE IF EXISTS book_authors        CASCADE;
-DROP TABLE IF EXISTS books               CASCADE;
-DROP TABLE IF EXISTS copy_conditions     CASCADE;
-DROP TABLE IF EXISTS author_roles        CASCADE;
-DROP TABLE IF EXISTS authors             CASCADE;
-DROP TABLE IF EXISTS categories          CASCADE;
-DROP TABLE IF EXISTS user_phones         CASCADE;
-DROP TABLE IF EXISTS users               CASCADE;
-DROP TABLE IF EXISTS membership_tiers    CASCADE;
-DROP TABLE IF EXISTS languages           CASCADE;
+DROP TABLE IF EXISTS fines;
+DROP TABLE IF EXISTS reservations;
+DROP TABLE IF EXISTS loans;
+DROP TABLE IF EXISTS book_copies;
+DROP TABLE IF EXISTS book_languages;
+DROP TABLE IF EXISTS book_authors;
+DROP TABLE IF EXISTS books;
+DROP TABLE IF EXISTS copy_conditions;
+DROP TABLE IF EXISTS author_roles;
+DROP TABLE IF EXISTS authors;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS user_phones;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS membership_tiers;
+DROP TABLE IF EXISTS languages;
 
-DROP FUNCTION IF EXISTS fn_calculate_fine(DATE, DATE, NUMERIC);
-DROP FUNCTION IF EXISTS fn_check_borrow_limit();
-DROP FUNCTION IF EXISTS fn_auto_generate_fine();
-DROP FUNCTION IF EXISTS fn_mark_overdue_loans();
-DROP FUNCTION IF EXISTS fn_expire_reservations();
-DROP FUNCTION IF EXISTS fn_sync_copy_availability();
+DROP PROCEDURE IF EXISTS fn_check_borrow_limit;
+DROP PROCEDURE IF EXISTS fn_sync_copy_availability;
+DROP PROCEDURE IF EXISTS fn_auto_generate_fine;
+DROP PROCEDURE IF EXISTS fn_expire_reservations;
+DROP PROCEDURE IF EXISTS fn_mark_overdue_loans;
 
-DROP TYPE IF EXISTS user_role            CASCADE;
-DROP TYPE IF EXISTS loan_status          CASCADE;
-DROP TYPE IF EXISTS reservation_status   CASCADE;
-DROP TYPE IF EXISTS fine_status          CASCADE;
-
-
--- ============================================================
---  ENUMS
--- ============================================================
-CREATE TYPE user_role           AS ENUM ('member', 'librarian', 'admin');
-CREATE TYPE loan_status         AS ENUM ('active', 'returned', 'overdue');
-CREATE TYPE reservation_status  AS ENUM ('pending', 'fulfilled', 'cancelled', 'expired');
-CREATE TYPE fine_status         AS ENUM ('unpaid', 'paid', 'waived');
+DROP FUNCTION IF EXISTS fn_calculate_fine;
 
 
 -- ============================================================
 --  1. MEMBERSHIP TIERS  (unchanged — already 1NF)
 -- ============================================================
 CREATE TABLE membership_tiers (
-    tier_id            SERIAL          PRIMARY KEY,
+    tier_id            INT AUTO_INCREMENT PRIMARY KEY,
     tier_name          VARCHAR(50)     NOT NULL UNIQUE,
-    max_books          INT             NOT NULL DEFAULT 3
-                           CHECK (max_books BETWEEN 1 AND 20),
-    loan_duration_days INT             NOT NULL DEFAULT 14
-                           CHECK (loan_duration_days BETWEEN 1 AND 90),
-    fine_per_day       NUMERIC(6,2)    NOT NULL DEFAULT 1.00
-                           CHECK (fine_per_day >= 0)
+    max_books          INT             NOT NULL DEFAULT 3,
+    loan_duration_days INT             NOT NULL DEFAULT 14,
+    fine_per_day       DECIMAL(6,2)    NOT NULL DEFAULT 1.00,
+    CONSTRAINT chk_max_books CHECK (max_books BETWEEN 1 AND 20),
+    CONSTRAINT chk_loan_duration CHECK (loan_duration_days BETWEEN 1 AND 90),
+    CONSTRAINT chk_fine_per_day CHECK (fine_per_day >= 0)
 );
 
 INSERT INTO membership_tiers (tier_name, max_books, loan_duration_days, fine_per_day) VALUES
@@ -83,7 +80,7 @@ INSERT INTO membership_tiers (tier_name, max_books, loan_duration_days, fine_per
 --     • phone      removed (moved to user_phones table below)
 -- ============================================================
 CREATE TABLE users (
-    user_id        SERIAL          PRIMARY KEY,
+    user_id        INT AUTO_INCREMENT PRIMARY KEY,
     national_id    VARCHAR(20)     UNIQUE,
 
     -- [1NF FIX ①] Composite full_name → two atomic columns
@@ -101,12 +98,12 @@ CREATE TABLE users (
 
     -- NOTE: phone column removed — see user_phones table [1NF FIX ③]
 
-    role           user_role       NOT NULL DEFAULT 'member',
-    tier_id        INT             NOT NULL DEFAULT 1
-                       REFERENCES membership_tiers(tier_id) ON UPDATE CASCADE,
-    is_active      BOOLEAN         NOT NULL DEFAULT TRUE,
-    registered_at  TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
-    password_hash  VARCHAR(255)    NOT NULL
+    role           ENUM('member', 'librarian', 'admin') NOT NULL DEFAULT 'member',
+    tier_id        INT             NOT NULL DEFAULT 1,
+    is_active      TINYINT(1)      NOT NULL DEFAULT 1,
+    registered_at  TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    password_hash  VARCHAR(255)    NOT NULL,
+    FOREIGN KEY (tier_id) REFERENCES membership_tiers(tier_id) ON UPDATE CASCADE
 );
 
 CREATE INDEX idx_users_email      ON users(email);
@@ -121,15 +118,12 @@ CREATE INDEX idx_users_last_name  ON users(last_name);
 --     Each row is one atomic phone number for one user.
 -- ============================================================
 CREATE TABLE user_phones (
-    phone_id      SERIAL          PRIMARY KEY,
-    user_id       INT             NOT NULL
-                      REFERENCES users(user_id) ON DELETE CASCADE,
+    phone_id      INT AUTO_INCREMENT PRIMARY KEY,
+    user_id       INT             NOT NULL,
     phone_number  VARCHAR(30)     NOT NULL,
-    phone_type    VARCHAR(20)     NOT NULL DEFAULT 'mobile'
-                      CHECK (phone_type IN ('mobile', 'home', 'work', 'fax')),
-    is_primary    BOOLEAN         NOT NULL DEFAULT FALSE,
-    CONSTRAINT uq_user_primary_phone UNIQUE (user_id, is_primary)
-                      DEFERRABLE INITIALLY DEFERRED
+    phone_type    ENUM('mobile', 'home', 'work', 'fax') NOT NULL DEFAULT 'mobile',
+    is_primary    TINYINT(1)      NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_phones_user ON user_phones(user_id);
@@ -139,10 +133,11 @@ CREATE INDEX idx_phones_user ON user_phones(user_id);
 --  4. CATEGORIES  (unchanged — already 1NF)
 -- ============================================================
 CREATE TABLE categories (
-    category_id   SERIAL          PRIMARY KEY,
+    category_id   INT AUTO_INCREMENT PRIMARY KEY,
     name          VARCHAR(100)    NOT NULL UNIQUE,
-    parent_id     INT             REFERENCES categories(category_id) ON DELETE SET NULL,
-    description   TEXT
+    parent_id     INT,
+    description   TEXT,
+    FOREIGN KEY (parent_id) REFERENCES categories(category_id) ON DELETE SET NULL
 );
 
 INSERT INTO categories (name, description) VALUES
@@ -160,7 +155,7 @@ INSERT INTO categories (name, description) VALUES
 --     Replaces the free-text books.language column.
 -- ============================================================
 CREATE TABLE languages (
-    language_id   SERIAL          PRIMARY KEY,
+    language_id   INT AUTO_INCREMENT PRIMARY KEY,
     language_name VARCHAR(80)     NOT NULL UNIQUE,   -- e.g. 'English', 'Arabic'
     iso_code      CHAR(3)         NOT NULL UNIQUE    -- ISO 639-2 code, e.g. 'eng', 'ara'
 );
@@ -179,7 +174,7 @@ INSERT INTO languages (language_name, iso_code) VALUES
 --     strings like "author, editor" in a single cell.
 -- ============================================================
 CREATE TABLE author_roles (
-    role_id    SERIAL          PRIMARY KEY,
+    role_id    INT AUTO_INCREMENT PRIMARY KEY,
     role_name  VARCHAR(50)     NOT NULL UNIQUE   -- 'Author', 'Editor', 'Translator', etc.
 );
 
@@ -198,7 +193,7 @@ INSERT INTO author_roles (role_name) VALUES
 --     making condition values a proper referenced entity.
 -- ============================================================
 CREATE TABLE copy_conditions (
-    condition_id    SERIAL          PRIMARY KEY,
+    condition_id    INT AUTO_INCREMENT PRIMARY KEY,
     condition_name  VARCHAR(30)     NOT NULL UNIQUE,
     description     TEXT
 );
@@ -217,7 +212,7 @@ INSERT INTO copy_conditions (condition_name, description) VALUES
 --     full_name split into first_name + last_name
 -- ============================================================
 CREATE TABLE authors (
-    author_id   SERIAL          PRIMARY KEY,
+    author_id   INT AUTO_INCREMENT PRIMARY KEY,
 
     -- [1NF FIX ④] Composite full_name → two atomic columns
     first_name  VARCHAR(75)     NOT NULL,
@@ -234,17 +229,18 @@ CREATE TABLE authors (
 --     language column removed (now in book_languages junction)
 -- ============================================================
 CREATE TABLE books (
-    book_id          SERIAL          PRIMARY KEY,
+    book_id          INT AUTO_INCREMENT PRIMARY KEY,
     isbn             VARCHAR(20)     NOT NULL UNIQUE,
     title            VARCHAR(300)    NOT NULL,
-    category_id      INT             REFERENCES categories(category_id) ON DELETE SET NULL,
+    category_id      INT,
     publisher        VARCHAR(200),
     published_year   INT,
     edition          VARCHAR(50),
     -- [1NF FIX ⑤] language column removed — see book_languages table
     description      TEXT,
-    cover_image_url  TEXT,
-    added_at         TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+    cover_image_url  VARCHAR(500),
+    added_at         TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_books_title    ON books(title);
@@ -258,9 +254,11 @@ CREATE INDEX idx_books_category ON books(category_id);
 --      A bilingual book gets two rows; a monolingual book gets one.
 -- ============================================================
 CREATE TABLE book_languages (
-    book_id      INT  NOT NULL REFERENCES books(book_id)     ON DELETE CASCADE,
-    language_id  INT  NOT NULL REFERENCES languages(language_id) ON DELETE RESTRICT,
-    PRIMARY KEY (book_id, language_id)
+    book_id      INT NOT NULL,
+    language_id  INT NOT NULL,
+    PRIMARY KEY (book_id, language_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (language_id) REFERENCES languages(language_id) ON DELETE RESTRICT
 );
 
 
@@ -270,10 +268,13 @@ CREATE TABLE book_languages (
 --      Each row captures exactly ONE author in ONE role for ONE book.
 -- ============================================================
 CREATE TABLE book_authors (
-    book_id    INT  NOT NULL REFERENCES books(book_id)   ON DELETE CASCADE,
-    author_id  INT  NOT NULL REFERENCES authors(author_id) ON DELETE CASCADE,
-    role_id    INT  NOT NULL REFERENCES author_roles(role_id),
-    PRIMARY KEY (book_id, author_id, role_id)  -- composite PK allows author in multiple roles
+    book_id    INT NOT NULL,
+    author_id  INT NOT NULL,
+    role_id    INT NOT NULL,
+    PRIMARY KEY (book_id, author_id, role_id),
+    FOREIGN KEY (book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (author_id) REFERENCES authors(author_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES author_roles(role_id)
 );
 
 
@@ -282,15 +283,16 @@ CREATE TABLE book_authors (
 --      condition now references copy_conditions table
 -- ============================================================
 CREATE TABLE book_copies (
-    copy_id        SERIAL   PRIMARY KEY,
-    book_id        INT      NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
+    copy_id        INT AUTO_INCREMENT PRIMARY KEY,
+    book_id        INT      NOT NULL,
     barcode        VARCHAR(50) UNIQUE,
     -- [1NF FIX ⑦] condition VARCHAR + CHECK → FK to copy_conditions
-    condition_id   INT      NOT NULL DEFAULT 2    -- 2 = 'Good'
-                       REFERENCES copy_conditions(condition_id),
-    is_available   BOOLEAN  NOT NULL DEFAULT TRUE,
+    condition_id   INT      NOT NULL DEFAULT 2,    -- 2 = 'Good'
+    is_available   TINYINT(1) NOT NULL DEFAULT 1,
     location_shelf VARCHAR(50),
-    acquired_date  DATE
+    acquired_date  DATE,
+    FOREIGN KEY (book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (condition_id) REFERENCES copy_conditions(condition_id)
 );
 
 CREATE INDEX idx_copies_book      ON book_copies(book_id);
@@ -301,15 +303,18 @@ CREATE INDEX idx_copies_available ON book_copies(is_available);
 --  13. LOANS  (unchanged — already 1NF)
 -- ============================================================
 CREATE TABLE loans (
-    loan_id      SERIAL       PRIMARY KEY,
-    user_id      INT          NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
-    copy_id      INT          NOT NULL REFERENCES book_copies(copy_id) ON DELETE RESTRICT,
-    issued_by    INT          REFERENCES users(user_id),
-    loan_date    DATE         NOT NULL DEFAULT CURRENT_DATE,
+    loan_id      INT AUTO_INCREMENT PRIMARY KEY,
+    user_id      INT          NOT NULL,
+    copy_id      INT          NOT NULL,
+    issued_by    INT,
+    loan_date    DATE         NOT NULL DEFAULT (CURRENT_DATE),
     due_date     DATE         NOT NULL,
     return_date  DATE,
-    status       loan_status  NOT NULL DEFAULT 'active',
+    status       ENUM('active', 'returned', 'overdue') NOT NULL DEFAULT 'active',
     notes        TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT,
+    FOREIGN KEY (copy_id) REFERENCES book_copies(copy_id) ON DELETE RESTRICT,
+    FOREIGN KEY (issued_by) REFERENCES users(user_id),
     CONSTRAINT chk_due_after_loan    CHECK (due_date > loan_date),
     CONSTRAINT chk_return_after_loan CHECK (return_date IS NULL OR return_date >= loan_date)
 );
@@ -319,48 +324,47 @@ CREATE INDEX idx_loans_copy     ON loans(copy_id);
 CREATE INDEX idx_loans_status   ON loans(status);
 CREATE INDEX idx_loans_due_date ON loans(due_date);
 
-CREATE UNIQUE INDEX uq_loans_active_copy
-    ON loans(copy_id)
-    WHERE status = 'active';
-
 
 -- ============================================================
 --  14. RESERVATIONS  (unchanged — already 1NF)
 -- ============================================================
 CREATE TABLE reservations (
-    reservation_id  SERIAL              PRIMARY KEY,
-    user_id         INT                 NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    book_id         INT                 NOT NULL REFERENCES books(book_id) ON DELETE CASCADE,
-    reserved_at     TIMESTAMPTZ         NOT NULL DEFAULT NOW(),
-    expires_at      TIMESTAMPTZ         NOT NULL DEFAULT NOW() + INTERVAL '3 days',
-    status          reservation_status  NOT NULL DEFAULT 'pending',
-    fulfilled_loan  INT                 REFERENCES loans(loan_id)
+    reservation_id  INT AUTO_INCREMENT PRIMARY KEY,
+    user_id         INT                 NOT NULL,
+    book_id         INT                 NOT NULL,
+    reserved_at     TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at      TIMESTAMP           NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL 3 DAY),
+    status          ENUM('pending', 'fulfilled', 'cancelled', 'expired') NOT NULL DEFAULT 'pending',
+    fulfilled_loan  INT,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (fulfilled_loan) REFERENCES loans(loan_id)
 );
 
 CREATE INDEX idx_reservations_user   ON reservations(user_id);
 CREATE INDEX idx_reservations_book   ON reservations(book_id);
 CREATE INDEX idx_reservations_status ON reservations(status);
 
-CREATE UNIQUE INDEX uq_reservation_pending
-    ON reservations(user_id, book_id)
-    WHERE status = 'pending';
-
 
 -- ============================================================
 --  15. FINES  (unchanged — already 1NF)
 -- ============================================================
 CREATE TABLE fines (
-    fine_id       SERIAL       PRIMARY KEY,
-    loan_id       INT          NOT NULL UNIQUE
-                      REFERENCES loans(loan_id) ON DELETE CASCADE,
-    user_id       INT          NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    overdue_days  INT          NOT NULL CHECK (overdue_days > 0),
-    amount        NUMERIC(10,2) NOT NULL CHECK (amount >= 0),
-    status        fine_status  NOT NULL DEFAULT 'unpaid',
-    issued_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    paid_at       TIMESTAMPTZ,
-    collected_by  INT          REFERENCES users(user_id),
-    notes         TEXT
+    fine_id       INT AUTO_INCREMENT PRIMARY KEY,
+    loan_id       INT          NOT NULL UNIQUE,
+    user_id       INT          NOT NULL,
+    overdue_days  INT          NOT NULL,
+    amount        DECIMAL(10,2) NOT NULL,
+    status        ENUM('unpaid', 'paid', 'waived') NOT NULL DEFAULT 'unpaid',
+    issued_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    paid_at       TIMESTAMP    NULL,
+    collected_by  INT,
+    notes         TEXT,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (collected_by) REFERENCES users(user_id),
+    CONSTRAINT chk_overdue_days CHECK (overdue_days > 0),
+    CONSTRAINT chk_amount CHECK (amount >= 0)
 );
 
 CREATE INDEX idx_fines_user   ON fines(user_id);
@@ -368,105 +372,125 @@ CREATE INDEX idx_fines_status ON fines(status);
 
 
 -- ============================================================
---  FUNCTIONS & TRIGGERS  (logic unchanged, column refs updated)
+--  FUNCTIONS & STORED PROCEDURES
 -- ============================================================
 
-CREATE OR REPLACE FUNCTION fn_calculate_fine(
+DELIMITER $$
+
+-- Function to calculate fine amount
+CREATE FUNCTION fn_calculate_fine(
     p_due_date     DATE,
     p_return_date  DATE,
-    p_rate_per_day NUMERIC
-) RETURNS NUMERIC AS $$
-    SELECT GREATEST(0, (p_return_date - p_due_date) * p_rate_per_day)::NUMERIC(10,2);
-$$ LANGUAGE sql IMMUTABLE;
-
-
-CREATE OR REPLACE FUNCTION fn_check_borrow_limit()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_active_loans INT;
-    v_max_books    INT;
+    p_rate_per_day DECIMAL(10,2)
+) RETURNS DECIMAL(10,2)
+DETERMINISTIC
 BEGIN
-    SELECT COUNT(*) INTO v_active_loans
-    FROM loans WHERE user_id = NEW.user_id AND status = 'active';
+    DECLARE days_diff INT;
+    SET days_diff = DATEDIFF(p_return_date, p_due_date);
+    IF days_diff <= 0 THEN
+        RETURN 0.00;
+    END IF;
+    RETURN days_diff * p_rate_per_day;
+END$$
 
+-- Procedure to expire reservations
+CREATE PROCEDURE fn_expire_reservations()
+BEGIN
+    UPDATE reservations 
+    SET status = 'expired'
+    WHERE status = 'pending' AND expires_at < NOW();
+END$$
+
+-- Procedure to mark overdue loans
+CREATE PROCEDURE fn_mark_overdue_loans()
+BEGIN
+    UPDATE loans 
+    SET status = 'overdue'
+    WHERE status = 'active' AND due_date < CURRENT_DATE;
+END$$
+
+DELIMITER ;
+
+
+-- ============================================================
+--  TRIGGERS
+-- ============================================================
+
+DELIMITER $$
+
+-- Trigger: Check borrow limit before inserting a loan
+CREATE TRIGGER trg_check_borrow_limit
+    BEFORE INSERT ON loans
+    FOR EACH ROW
+BEGIN
+    DECLARE v_active_loans INT;
+    DECLARE v_max_books INT;
+    
+    SELECT COUNT(*) INTO v_active_loans
+    FROM loans 
+    WHERE user_id = NEW.user_id AND status = 'active';
+    
     SELECT mt.max_books INTO v_max_books
     FROM users u
     JOIN membership_tiers mt ON mt.tier_id = u.tier_id
     WHERE u.user_id = NEW.user_id;
-
+    
     IF v_active_loans >= v_max_books THEN
-        RAISE EXCEPTION
-            'Borrow limit reached. User % has % active loans (max: %).',
-            NEW.user_id, v_active_loans, v_max_books;
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Borrow limit reached. User has reached maximum active loans.';
     END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+END$$
 
-CREATE TRIGGER trg_check_borrow_limit
-    BEFORE INSERT ON loans
-    FOR EACH ROW EXECUTE FUNCTION fn_check_borrow_limit();
-
-
-CREATE OR REPLACE FUNCTION fn_sync_copy_availability()
-RETURNS TRIGGER AS $$
+-- Trigger: Sync copy availability when loan is inserted
+CREATE TRIGGER trg_sync_copy_availability_insert
+    AFTER INSERT ON loans
+    FOR EACH ROW
 BEGIN
-    IF TG_OP = 'INSERT' AND NEW.status = 'active' THEN
-        UPDATE book_copies SET is_available = FALSE WHERE copy_id = NEW.copy_id;
-    ELSIF TG_OP = 'UPDATE' AND NEW.return_date IS NOT NULL AND OLD.return_date IS NULL THEN
-        UPDATE book_copies SET is_available = TRUE WHERE copy_id = NEW.copy_id;
+    IF NEW.status = 'active' THEN
+        UPDATE book_copies SET is_available = 0 WHERE copy_id = NEW.copy_id;
     END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+END$$
 
-CREATE TRIGGER trg_sync_copy_availability
-    AFTER INSERT OR UPDATE ON loans
-    FOR EACH ROW EXECUTE FUNCTION fn_sync_copy_availability();
-
-
-CREATE OR REPLACE FUNCTION fn_auto_generate_fine()
-RETURNS TRIGGER AS $$
-DECLARE
-    v_days_overdue INT;
-    v_rate         NUMERIC;
+-- Trigger: Sync copy availability when loan is updated (returned)
+CREATE TRIGGER trg_sync_copy_availability_update
+    AFTER UPDATE ON loans
+    FOR EACH ROW
 BEGIN
-    IF NEW.return_date IS NULL OR OLD.return_date IS NOT NULL THEN
-        RETURN NEW;
+    IF NEW.return_date IS NOT NULL AND OLD.return_date IS NULL THEN
+        UPDATE book_copies SET is_available = 1 WHERE copy_id = NEW.copy_id;
     END IF;
-    v_days_overdue := (NEW.return_date - NEW.due_date);
-    IF v_days_overdue <= 0 THEN RETURN NEW; END IF;
+END$$
 
-    SELECT mt.fine_per_day INTO v_rate
-    FROM users u
-    JOIN membership_tiers mt ON mt.tier_id = u.tier_id
-    WHERE u.user_id = NEW.user_id;
-
-    INSERT INTO fines (loan_id, user_id, overdue_days, amount)
-    VALUES (NEW.loan_id, NEW.user_id, v_days_overdue,
-            fn_calculate_fine(NEW.due_date, NEW.return_date, v_rate))
-    ON CONFLICT (loan_id) DO NOTHING;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
+-- Trigger: Auto-generate fine when book is returned late
 CREATE TRIGGER trg_auto_generate_fine
     AFTER UPDATE ON loans
-    FOR EACH ROW EXECUTE FUNCTION fn_auto_generate_fine();
+    FOR EACH ROW
+BEGIN
+    DECLARE v_days_overdue INT;
+    DECLARE v_rate DECIMAL(10,2);
+    
+    IF NEW.return_date IS NULL OR OLD.return_date IS NOT NULL THEN
+        -- Not a return event, skip
+        -- Use LEAVE-like behavior by doing nothing
+        SET @skip = 1;
+    ELSE
+        SET v_days_overdue = DATEDIFF(NEW.return_date, NEW.due_date);
+        
+        IF v_days_overdue > 0 THEN
+            SELECT mt.fine_per_day INTO v_rate
+            FROM users u
+            JOIN membership_tiers mt ON mt.tier_id = u.tier_id
+            WHERE u.user_id = NEW.user_id;
+            
+            INSERT INTO fines (loan_id, user_id, overdue_days, amount)
+            VALUES (NEW.loan_id, NEW.user_id, v_days_overdue, 
+                    fn_calculate_fine(NEW.due_date, NEW.return_date, v_rate))
+            ON DUPLICATE KEY UPDATE loan_id = loan_id; -- Do nothing on duplicate
+        END IF;
+    END IF;
+END$$
 
-
-CREATE OR REPLACE FUNCTION fn_expire_reservations() RETURNS INT AS $$
-    UPDATE reservations SET status = 'expired'
-    WHERE status = 'pending' AND expires_at < NOW()
-    RETURNING reservation_id;
-$$ LANGUAGE sql;
-
-CREATE OR REPLACE FUNCTION fn_mark_overdue_loans() RETURNS INT AS $$
-    UPDATE loans SET status = 'overdue'
-    WHERE status = 'active' AND due_date < CURRENT_DATE
-    RETURNING loan_id;
-$$ LANGUAGE sql;
+DELIMITER ;
 
 
 -- ============================================================
@@ -477,7 +501,7 @@ CREATE OR REPLACE VIEW vw_active_loans AS
 SELECT
     l.loan_id,
     u.user_id,
-    u.first_name || ' ' || u.last_name     AS borrower_name,   -- [1NF FIX ①]
+    CONCAT(u.first_name, ' ', u.last_name) AS borrower_name,   -- [1NF FIX ①]
     u.email,
     b.book_id,
     b.title,
@@ -486,7 +510,7 @@ SELECT
     bc.barcode,
     l.loan_date,
     l.due_date,
-    (l.due_date - CURRENT_DATE)             AS days_remaining,
+    DATEDIFF(l.due_date, CURRENT_DATE) AS days_remaining,
     l.status
 FROM   loans l
 JOIN   users       u  ON u.user_id  = l.user_id
@@ -498,11 +522,11 @@ WHERE  l.status IN ('active', 'overdue');
 CREATE OR REPLACE VIEW vw_overdue_loans AS
 SELECT
     l.loan_id,
-    u.first_name || ' ' || u.last_name     AS borrower_name,
+    CONCAT(u.first_name, ' ', u.last_name) AS borrower_name,
     u.email,
     b.title,
     l.due_date,
-    CURRENT_DATE - l.due_date              AS days_overdue,
+    DATEDIFF(CURRENT_DATE, l.due_date) AS days_overdue,
     mt.fine_per_day,
     fn_calculate_fine(l.due_date, CURRENT_DATE, mt.fine_per_day) AS estimated_fine
 FROM   loans l
@@ -518,12 +542,11 @@ SELECT
     b.book_id,
     b.title,
     b.isbn,
-    c.name                                 AS category,
-    STRING_AGG(DISTINCT
-        a.first_name || ' ' || a.last_name,
-        ', ' ORDER BY a.last_name || ' ' || a.first_name
-    )                                      AS authors,          -- [1NF FIX ④]
-    COUNT(l.loan_id)                       AS total_loans
+    c.name AS category,
+    GROUP_CONCAT(DISTINCT CONCAT(a.first_name, ' ', a.last_name) 
+                 ORDER BY CONCAT(a.last_name, ' ', a.first_name) 
+                 SEPARATOR ', ') AS authors,          -- [1NF FIX ④]
+    COUNT(l.loan_id) AS total_loans
 FROM   books b
 LEFT JOIN book_copies  bc ON bc.book_id   = b.book_id
 LEFT JOIN loans        l  ON l.copy_id    = bc.copy_id
@@ -539,11 +562,11 @@ SELECT
     b.book_id,
     b.title,
     b.isbn,
-    c.name                                 AS category,
-    STRING_AGG(DISTINCT l.language_name, ', ')  AS languages,  -- [1NF FIX ⑤]
-    COUNT(bc.copy_id)                      AS available_copies
+    c.name AS category,
+    GROUP_CONCAT(DISTINCT l.language_name SEPARATOR ', ') AS languages,  -- [1NF FIX ⑤]
+    COUNT(bc.copy_id) AS available_copies
 FROM   books b
-JOIN   book_copies bc  ON bc.book_id    = b.book_id AND bc.is_available = TRUE
+JOIN   book_copies bc  ON bc.book_id    = b.book_id AND bc.is_available = 1
 LEFT JOIN categories c ON c.category_id = b.category_id
 LEFT JOIN book_languages bl ON bl.book_id = b.book_id
 LEFT JOIN languages l      ON l.language_id = bl.language_id
@@ -559,14 +582,14 @@ FROM fines GROUP BY status;
 CREATE OR REPLACE VIEW vw_user_borrowing_history AS
 SELECT
     u.user_id,
-    u.first_name || ' ' || u.last_name     AS full_name,
+    CONCAT(u.first_name, ' ', u.last_name) AS full_name,
     b.title,
     l.loan_date,
     l.due_date,
     l.return_date,
-    l.status                               AS loan_status,
-    COALESCE(f.amount, 0)                  AS fine_amount,
-    f.status                               AS fine_status
+    l.status AS loan_status,
+    COALESCE(f.amount, 0) AS fine_amount,
+    f.status AS fine_status
 FROM   users u
 JOIN   loans       l  ON l.user_id  = u.user_id
 JOIN   book_copies bc ON bc.copy_id = l.copy_id
@@ -625,17 +648,17 @@ INSERT INTO users (first_name, last_name, email,
 
 -- User phones (separate table) [1NF FIX ③]
 INSERT INTO user_phones (user_id, phone_number, phone_type, is_primary) VALUES
-    (1, '01012345678', 'mobile', TRUE),
-    (2, '01098765432', 'mobile', TRUE),
-    (2, '0223456789',  'home',   FALSE),   -- Bob has two numbers — now properly stored
-    (3, '01155554444', 'mobile', TRUE),
-    (4, '01133332222', 'work',   TRUE),
-    (5, '01177778888', 'work',   TRUE);
+    (1, '01012345678', 'mobile', 1),
+    (2, '01098765432', 'mobile', 1),
+    (2, '0223456789',  'home',   0),   -- Bob has two numbers — now properly stored
+    (3, '01155554444', 'mobile', 1),
+    (4, '01133332222', 'work',   1),
+    (5, '01177778888', 'work',   1);
 
 -- Sample loans
 INSERT INTO loans (user_id, copy_id, issued_by, loan_date, due_date, status) VALUES
-    (1, 1, 4, CURRENT_DATE - 5,  CURRENT_DATE + 9,  'active'),
-    (2, 6, 4, CURRENT_DATE - 25, CURRENT_DATE - 3,  'overdue');
+    (1, 1, 4, DATE_ADD(CURRENT_DATE, INTERVAL -5 DAY),  DATE_ADD(CURRENT_DATE, INTERVAL 9 DAY),  'active'),
+    (2, 6, 4, DATE_ADD(CURRENT_DATE, INTERVAL -25 DAY), DATE_ADD(CURRENT_DATE, INTERVAL -3 DAY), 'overdue');
 
 -- Sample reservation
 INSERT INTO reservations (user_id, book_id) VALUES (3, 1);
