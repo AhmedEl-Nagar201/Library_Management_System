@@ -1,1 +1,20 @@
-Nothing needs to be added to .gitignore since only a source file (index.html) was added without any build artifacts, dependencies, or temporary files.
+```
+# Dependencies
+node_modules/
+
+# Logs and temp files
+*.log
+*.tmp
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Package lock
+package-lock.json
+
+# Build artifacts (if any JS/TS build process exists)
+dist/
+build/
+```
