@@ -63,10 +63,41 @@ VALUES ('John', 'Doe', 'member@library.com', 'member123', 'member', 1, 'Egypt');
 
 ## Features
 
-### Role-Based Access
-- **Member**: View loans, reservations, browse books
-- **Librarian**: Issue loans, process returns, manage books
-- **Admin**: Full access including user management and system settings
+### Role-Based Access Control (RBAC)
+
+The system implements comprehensive authorization with different views and permissions for each role:
+
+#### Admin
+- **Full system access** to all features and data
+- Manage all users (create, edit, delete)
+- View and manage all books, loans, reservations, and fines
+- Access system settings and configuration
+- View analytics and reports across all users
+
+#### Librarian
+- **Operational access** for daily library management
+- Manage books (add, edit, delete)
+- Process loans and returns
+- Handle reservations
+- Manage fines and payments
+- **Cannot** access user management or system settings
+- **Cannot** view other librarians' or admins' personal data
+
+#### Member (Student/User)
+- **Limited access** to personal data only
+- View their own loans and loan history
+- View their own reservations
+- View and pay their own fines
+- Browse and search the book catalog
+- **Cannot** see other users' data, loans, or personal information
+- **Cannot** access administrative functions
+- **Cannot** modify system data
+
+### Security Implementation
+- **Frontend**: Dynamic UI rendering based on user role - tabs and features are hidden/shown accordingly
+- **Backend**: API endpoints filter data by user ID for members, ensuring they can only retrieve their own records
+- **Authentication**: Role verification on every protected route
+- **Data Isolation**: Members cannot access data belonging to other users through direct API calls
 
 ### All Schema Tables Covered
 1. Membership Tiers

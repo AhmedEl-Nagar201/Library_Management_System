@@ -57,23 +57,8 @@
             <!-- Tab Navigation -->
             <div class="mb-6">
                 <div class="border-b border-gray-200">
-                    <nav class="-mb-px flex space-x-4 overflow-x-auto pb-2">
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm active border-blue-500 text-blue-600" data-tab="dashboard">Dashboard</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="users">Users</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="books">Books</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="book-copies">Book Copies</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="loans">Loans</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="reservations">Reservations</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="fines">Fines</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="authors">Authors</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="categories">Categories</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="membership-tiers">Membership Tiers</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="languages">Languages</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="author-roles">Author Roles</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="copy-conditions">Copy Conditions</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="user-phones">User Phones</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="book-languages">Book Languages</button>
-                        <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="book-authors">Book Authors</button>
+                    <nav id="tab-navigation" class="-mb-px flex space-x-4 overflow-x-auto pb-2">
+                        <!-- Dynamically populated based on role -->
                     </nav>
                 </div>
             </div>
@@ -99,6 +84,37 @@
         let editingId = null;
         let lookupData = {};
 
+        // Role-based permissions configuration
+        const ROLE_PERMISSIONS = {
+            admin: {
+                tabs: ['dashboard', 'users', 'books', 'book-copies', 'loans', 'reservations', 'fines', 'authors', 'categories', 'membership-tiers', 'languages', 'author-roles', 'copy-conditions', 'user-phones', 'book-languages', 'book-authors'],
+                canEdit: true,
+                canDelete: true,
+                canViewAllUsers: true,
+                canViewAllLoans: true,
+                canViewAllReservations: true,
+                canViewAllFines: true
+            },
+            librarian: {
+                tabs: ['dashboard', 'books', 'book-copies', 'loans', 'reservations', 'fines', 'authors', 'categories', 'languages', 'author-roles', 'copy-conditions', 'user-phones', 'book-languages', 'book-authors'],
+                canEdit: true,
+                canDelete: false,
+                canViewAllUsers: false,
+                canViewAllLoans: true,
+                canViewAllReservations: true,
+                canViewAllFines: true
+            },
+            member: {
+                tabs: ['dashboard', 'books', 'my-loans', 'my-reservations', 'my-fines'],
+                canEdit: false,
+                canDelete: false,
+                canViewAllUsers: false,
+                canViewAllLoans: false,
+                canViewAllReservations: false,
+                canViewAllFines: false
+            }
+        };
+
         // Login handling
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -114,6 +130,9 @@
                 
                 if (response.ok) {
                     currentUser = await response.json();
+                    // Get user permissions based on role
+                    currentUser.permissions = ROLE_PERMISSIONS[currentUser.role] || ROLE_PERMISSIONS.member;
+                    
                     document.getElementById('login-screen').classList.add('hidden');
                     document.getElementById('main-app').classList.remove('hidden');
                     document.getElementById('user-info').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
@@ -128,6 +147,7 @@
                     
                     loadLookupData();
                     renderQuickActions();
+                    renderTabNavigation();
                     renderContent();
                 } else {
                     const error = await response.json();
@@ -204,6 +224,61 @@
             `).join('');
         }
 
+        function renderTabNavigation() {
+            const nav = document.getElementById('tab-navigation');
+            if (!currentUser || !currentUser.permissions) return;
+            
+            const tabLabels = {
+                'dashboard': 'Dashboard',
+                'users': 'Users',
+                'books': 'Books',
+                'book-copies': 'Book Copies',
+                'loans': 'Loans',
+                'reservations': 'Reservations',
+                'fines': 'Fines',
+                'authors': 'Authors',
+                'categories': 'Categories',
+                'membership-tiers': 'Membership Tiers',
+                'languages': 'Languages',
+                'author-roles': 'Author Roles',
+                'copy-conditions': 'Copy Conditions',
+                'user-phones': 'User Phones',
+                'book-languages': 'Book Languages',
+                'book-authors': 'Book Authors',
+                'my-loans': 'My Loans',
+                'my-reservations': 'My Reservations',
+                'my-fines': 'My Fines'
+            };
+            
+            const allowedTabs = currentUser.permissions.tabs;
+            
+            nav.innerHTML = allowedTabs.map((tab, index) => `
+                <button class="tab-btn whitespace-nowrap py-2 px-3 border-b-2 font-medium text-sm ${index === 0 ? 'active border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}" 
+                    data-tab="${tab}">
+                    ${tabLabels[tab] || tab}
+                </button>
+            `).join('');
+            
+            // Re-attach event listeners to new buttons
+            nav.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    nav.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                        b.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    });
+                    btn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                    btn.classList.add('active', 'border-blue-500', 'text-blue-600');
+                    currentTab = btn.dataset.tab;
+                    renderContent();
+                });
+            });
+            
+            // Set default tab to first allowed tab
+            if (allowedTabs.length > 0) {
+                currentTab = allowedTabs[0];
+            }
+        }
+
         function handleQuickAction(action) {
             if (action === 'newLoan') {
                 switchTab('loans');
@@ -217,20 +292,6 @@
             document.querySelector(`[data-tab="${tab}"]`)?.click();
         }
 
-        // Tab switching
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => {
-                    b.classList.remove('active', 'border-blue-500', 'text-blue-600');
-                    b.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-                });
-                btn.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
-                btn.classList.add('active', 'border-blue-500', 'text-blue-600');
-                currentTab = btn.dataset.tab;
-                renderContent();
-            });
-        });
-
         async function renderContent() {
             const contentArea = document.getElementById('content-area');
             contentArea.innerHTML = '<div class="text-center py-8">Loading...</div>';
@@ -241,7 +302,23 @@
                     return;
                 }
                 
-                const endpoint = currentTab.replace(/-/g, '-');
+                // Handle role-specific tabs for members
+                let endpoint = currentTab;
+                if (currentTab === 'my-loans' || currentTab === 'my-reservations' || currentTab === 'my-fines') {
+                    // Members can only see their own data
+                    if (currentUser.role !== 'member') {
+                        endpoint = currentTab.replace('my-', '');
+                    } else {
+                        // For members, fetch filtered data
+                        const baseEndpoint = currentTab.replace('my-', '');
+                        const response = await fetch(`${API_BASE}/${baseEndpoint}?user_id=${currentUser.user_id}`);
+                        if (!response.ok) throw new Error('Failed to fetch data');
+                        const data = await response.json();
+                        renderTable(contentArea, data);
+                        return;
+                    }
+                }
+                
                 const response = await fetch(`${API_BASE}/${endpoint}`);
                 if (!response.ok) throw new Error('Failed to fetch data');
                 const data = await response.json();
@@ -348,9 +425,9 @@
                                 <tr class="border-b hover:bg-gray-50">
                                     ${columns.map(col => `<td class="py-2 px-4 text-sm text-gray-900">${formatValue(row[col])}</td>`).join('')}
                                     ${canEdit() ? `
-                                        <td class="py-2 px-4 text-sm whitespace-nowrap">
-                                            ${!['book-languages', 'book-authors'].includes(currentTab) ? `<button onclick="editItem('${row[idField]}')" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>` : ''}
-                                            <button onclick="deleteItem('${row[idField]}')" class="text-red-600 hover:text-red-800">Delete</button>
+                                        <td class="py-2 px-4 text-sm">
+                                            <button onclick="editItem(${row[idField]})" class="text-blue-600 hover:text-blue-800 mr-2">Edit</button>
+                                            ${canDelete() ? `<button onclick="deleteItem(${row[idField]})" class="text-red-600 hover:text-red-800">Delete</button>` : ''}
                                         </td>
                                     ` : ''}
                                 </tr>
@@ -388,7 +465,11 @@
         }
 
         function canEdit() {
-            return currentUser && (currentUser.role === 'admin' || currentUser.role === 'librarian');
+            return currentUser && currentUser.permissions && currentUser.permissions.canEdit;
+        }
+
+        function canDelete() {
+            return currentUser && currentUser.permissions && currentUser.permissions.canDelete;
         }
 
         function showModal(content) {
