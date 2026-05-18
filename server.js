@@ -134,16 +134,31 @@ app.delete('/api/membership-tiers/:id', async (req, res) => {
     }
 });
 
-// Users
+// Users - with role-based access control
 app.get('/api/users', async (req, res) => {
     try {
-        const rows = await query(`
-            SELECT u.*, t.tier_name 
-            FROM users u 
-            LEFT JOIN membership_tiers t ON u.tier_id = t.tier_id 
-            ORDER BY u.user_id
-        `);
-        res.json(rows);
+        const { user_id } = req.query;
+        
+        // If user_id is provided, return only that user's data (for members viewing their own profile)
+        if (user_id) {
+            const rows = await query(`
+                SELECT u.*, t.tier_name 
+                FROM users u 
+                LEFT JOIN membership_tiers t ON u.tier_id = t.tier_id 
+                WHERE u.user_id = ?
+                ORDER BY u.user_id
+            `, [user_id]);
+            res.json(rows);
+        } else {
+            // Return all users (for admins/librarians)
+            const rows = await query(`
+                SELECT u.*, t.tier_name 
+                FROM users u 
+                LEFT JOIN membership_tiers t ON u.tier_id = t.tier_id 
+                ORDER BY u.user_id
+            `);
+            res.json(rows);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -622,19 +637,37 @@ app.delete('/api/book-copies/:id', async (req, res) => {
     }
 });
 
-// Loans
+// Loans - with role-based access control
 app.get('/api/loans', async (req, res) => {
     try {
-        const rows = await query(`
-            SELECT l.*, u.first_name, u.last_name, b.title, ub.first_name as issued_first, ub.last_name as issued_last
-            FROM loans l 
-            JOIN users u ON l.user_id = u.user_id 
-            JOIN book_copies bc ON l.copy_id = bc.copy_id 
-            JOIN books b ON bc.book_id = b.book_id 
-            LEFT JOIN users ub ON l.issued_by = ub.user_id 
-            ORDER BY l.loan_id DESC
-        `);
-        res.json(rows);
+        const { user_id } = req.query;
+        
+        // If user_id is provided, return only that user's loans (for members viewing their own loans)
+        if (user_id) {
+            const rows = await query(`
+                SELECT l.*, u.first_name, u.last_name, b.title, ub.first_name as issued_first, ub.last_name as issued_last
+                FROM loans l 
+                JOIN users u ON l.user_id = u.user_id 
+                JOIN book_copies bc ON l.copy_id = bc.copy_id 
+                JOIN books b ON bc.book_id = b.book_id 
+                LEFT JOIN users ub ON l.issued_by = ub.user_id 
+                WHERE l.user_id = ?
+                ORDER BY l.loan_id DESC
+            `, [user_id]);
+            res.json(rows);
+        } else {
+            // Return all loans (for admins/librarians)
+            const rows = await query(`
+                SELECT l.*, u.first_name, u.last_name, b.title, ub.first_name as issued_first, ub.last_name as issued_last
+                FROM loans l 
+                JOIN users u ON l.user_id = u.user_id 
+                JOIN book_copies bc ON l.copy_id = bc.copy_id 
+                JOIN books b ON bc.book_id = b.book_id 
+                LEFT JOIN users ub ON l.issued_by = ub.user_id 
+                ORDER BY l.loan_id DESC
+            `);
+            res.json(rows);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -686,17 +719,33 @@ app.delete('/api/loans/:id', async (req, res) => {
     }
 });
 
-// Reservations
+// Reservations - with role-based access control
 app.get('/api/reservations', async (req, res) => {
     try {
-        const rows = await query(`
-            SELECT r.*, u.first_name, u.last_name, b.title 
-            FROM reservations r 
-            JOIN users u ON r.user_id = u.user_id 
-            JOIN books b ON r.book_id = b.book_id 
-            ORDER BY r.reservation_id DESC
-        `);
-        res.json(rows);
+        const { user_id } = req.query;
+        
+        // If user_id is provided, return only that user's reservations (for members viewing their own reservations)
+        if (user_id) {
+            const rows = await query(`
+                SELECT r.*, u.first_name, u.last_name, b.title 
+                FROM reservations r 
+                JOIN users u ON r.user_id = u.user_id 
+                JOIN books b ON r.book_id = b.book_id 
+                WHERE r.user_id = ?
+                ORDER BY r.reservation_id DESC
+            `, [user_id]);
+            res.json(rows);
+        } else {
+            // Return all reservations (for admins/librarians)
+            const rows = await query(`
+                SELECT r.*, u.first_name, u.last_name, b.title 
+                FROM reservations r 
+                JOIN users u ON r.user_id = u.user_id 
+                JOIN books b ON r.book_id = b.book_id 
+                ORDER BY r.reservation_id DESC
+            `);
+            res.json(rows);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -737,17 +786,33 @@ app.delete('/api/reservations/:id', async (req, res) => {
     }
 });
 
-// Fines
+// Fines - with role-based access control
 app.get('/api/fines', async (req, res) => {
     try {
-        const rows = await query(`
-            SELECT f.*, u.first_name, u.last_name, l.loan_id 
-            FROM fines f 
-            JOIN users u ON f.user_id = u.user_id 
-            JOIN loans l ON f.loan_id = l.loan_id 
-            ORDER BY f.fine_id DESC
-        `);
-        res.json(rows);
+        const { user_id } = req.query;
+        
+        // If user_id is provided, return only that user's fines (for members viewing their own fines)
+        if (user_id) {
+            const rows = await query(`
+                SELECT f.*, u.first_name, u.last_name, l.loan_id 
+                FROM fines f 
+                JOIN users u ON f.user_id = u.user_id 
+                JOIN loans l ON f.loan_id = l.loan_id 
+                WHERE f.user_id = ?
+                ORDER BY f.fine_id DESC
+            `, [user_id]);
+            res.json(rows);
+        } else {
+            // Return all fines (for admins/librarians)
+            const rows = await query(`
+                SELECT f.*, u.first_name, u.last_name, l.loan_id 
+                FROM fines f 
+                JOIN users u ON f.user_id = u.user_id 
+                JOIN loans l ON f.loan_id = l.loan_id 
+                ORDER BY f.fine_id DESC
+            `);
+            res.json(rows);
+        }
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
